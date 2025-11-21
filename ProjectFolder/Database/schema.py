@@ -1,6 +1,7 @@
 import sqlite3
 
-DB_PATH = "Data/intelligence_platform.db"
+DB_PATH ="../Data/intelligence_platform.db"
+
 
 def create_tables():
     conn = sqlite3.connect(DB_PATH)
