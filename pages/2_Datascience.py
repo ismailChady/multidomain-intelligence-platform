@@ -17,7 +17,7 @@ conn.close()
 
 # Build DataFrame 
 df = pd.DataFrame(rows, columns=[
-    "ID", "Name", "Source", "Category", "Size", "Uploaded By", "Upload Date"
+    "ID", "Name", "Source", "Category", "Size", "Upload Date"
 ])
 
 # Sidebar filter
@@ -70,7 +70,7 @@ with st.form("insert_dataset"):
         st.experimental_rerun()
 
 #Update form
-st.subheader("✏️ Update Dataset Category")
+st.subheader("Update Dataset Category")
 with st.form("update_dataset"):
     selected_id = st.selectbox("Select Dataset ID", df["ID"])
     new_category = st.text_input("New Category")
