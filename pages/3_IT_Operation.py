@@ -35,7 +35,6 @@ priority_filter = st.sidebar.multiselect(
     default=df["Priority"].unique()
 )
 
-#FILTER DATA
 filtered_df = df[
     df["Status"].isin(status_filter) & df["Priority"].isin(priority_filter)
 ]
