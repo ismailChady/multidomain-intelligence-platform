@@ -110,7 +110,6 @@ if user_input:
         f"User question:\n{user_input}"
     )
 
-    # Call Gemini (non-streaming)
     with st.chat_message("assistant"):
         output = st.empty()
 
