@@ -6,12 +6,10 @@ from Database.data_management import connect_db, get_all_incidents
 if 'logged_in' not in st.session_state or not st.session_state.logged_in:
     st.warning("Please login to view this page.")
     st.stop()
-
-#page config
+#layout
 st.set_page_config(page_title="Cybersecurity Dashboard", layout="wide")
 st.title("Cybersecurity Incident Dashboard")
 
-#SIDEBAR FILTERS
 st.sidebar.header("Filter Incidents")
 
 status_filter = st.sidebar.multiselect(
@@ -35,17 +33,14 @@ df = pd.DataFrame(rows, columns=[
     "incident_id", "timestamp", "severity", "category", "status", "description"
 ])
 
-#FILTER DATA
 filtered_df = df[
     df["status"].str.lower().isin([s.lower() for s in status_filter]) &
     df["severity"].str.lower().isin([s.lower() for s in severity_filter])
 ]
 
-#METRICS 
 st.metric("Total Incidents", len(df))
 st.metric("Filtered Incidents", len(filtered_df))
 
-#LINE CHART 
 if not filtered_df.empty:
     st.subheader("Incidents Over Time")
     chart_df = filtered_df.copy()
