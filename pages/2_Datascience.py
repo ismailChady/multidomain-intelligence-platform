@@ -7,7 +7,7 @@ if 'logged_in' not in st.session_state or not st.session_state.logged_in:
     st.warning("Please login to view this page.")
     st.stop()
 
-#PAGE SETTINGS 
+
 st.set_page_config(page_title="Data Science Dashboard", layout="wide")
 st.title("Data Science Dashboard")
 
@@ -28,14 +28,11 @@ category_filter = st.sidebar.multiselect(
     default=df["Category"].unique()
 )
 
-#FILTERED DATA
 filtered_df = df[df["Category"].isin(category_filter)]
 
-#METRICS
 st.metric("Total Datasets", len(df))
 st.metric("Filtered Datasets", len(filtered_df))
 
-# --- CATEGORY CHART ---
 if not filtered_df.empty:
     st.subheader("Dataset Categories")
     st.bar_chart(filtered_df['Category'].value_counts())
