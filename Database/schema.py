@@ -1,8 +1,7 @@
 import sqlite3
 from pathlib import Path
 
-# DB path relative to this file
-DB_PATH = Path(__file__).resolve().parent / ".." / "Data" / "intelligence_platform.db"
+DB_PATH = "../Data/intelligence_platform.db"
 
 def create_tables():
     conn = sqlite3.connect(DB_PATH)
@@ -45,16 +44,15 @@ def create_tables():
 
     # Datasets Metadata Table
     cursor.execute("""
-        CREATE TABLE IF NOT EXISTS datasets_metadata (
-            dataset_id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT NOT NULL,
-            source TEXT NOT NULL,
-            category TEXT NOT NULL,
-            size REAL NOT NULL,
-            uploaded_by TEXT NOT NULL,
-            upload_date TEXT NOT NULL
-        )
-    """)
+    CREATE TABLE IF NOT EXISTS datasets_metadata (
+        dataset_id INTEGER PRIMARY KEY,
+        name TEXT,
+        rows INTEGER,
+        columns INTEGER,
+        uploaded_by TEXT,
+        upload_date TEXT
+    )
+""")
 
     conn.commit()
     conn.close()
