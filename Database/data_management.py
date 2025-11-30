@@ -47,9 +47,10 @@ def insert_ticket(conn, title, priority, status, created_date):
 def get_all_datasets(conn):
     return conn.execute("SELECT * FROM datasets_metadata").fetchall()
 
-def insert_dataset(conn, name, source, category, size):
+def insert_dataset(conn, name, rows, columns, uploaded_by, upload_date):
     conn.execute(
-        "INSERT INTO datasets_metadata (name, source, category, size) VALUES (?, ?, ?, ?)",
-        (name, source, category, size)
+        "INSERT INTO datasets_metadata (name, rows, columns, uploaded_by, upload_date) "
+        "VALUES (?, ?, ?, ?, ?)",
+        (name, rows, columns, uploaded_by, upload_date)
     )
     conn.commit()
