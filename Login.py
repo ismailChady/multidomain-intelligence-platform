@@ -5,7 +5,7 @@ import streamlit as st
 # Database path
 DB_PATH = "Data/intelligence_platform.db"
 
-# ---------------- REGISTER USER ----------------
+#REGISTER USER
 def register_user():
     username = st.text_input("Enter a new username", key="reg_username")
     password = st.text_input("Enter a new password", type="password", key="reg_password")
@@ -25,7 +25,7 @@ def register_user():
             conn.close()
             return
 
-        # Hash password + insert into DB
+        # Hash password
         hashed = bcrypt.hashpw(password.encode(), bcrypt.gensalt())
         cursor.execute("INSERT INTO users (username, password_hash) VALUES (?, ?)", (username, hashed.decode()))
         conn.commit()
@@ -33,7 +33,7 @@ def register_user():
 
         st.success("You are registered successfully!")
 
-# ---------------- LOGIN USER ----------------
+#LOGIN USER
 def login_user():
     username = st.text_input("Enter your username", key="login_username")
     password = st.text_input("Enter your password", type="password", key="login_password")
