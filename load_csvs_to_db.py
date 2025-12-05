@@ -2,7 +2,7 @@ import sqlite3
 import pandas as pd
 from pathlib import Path
 
-# Base directory = folder where THIS file lives (ProjectFolder)
+# Base directory
 BASE_DIR = Path(__file__).resolve().parent
 
 # Path to the SQLite database
@@ -36,7 +36,7 @@ if __name__ == "__main__":
         "it_tickets"
     )
 
-    # Data Science Datasets (uses EXACT same columns as CSV)
+    # Data Science Datasets
     load_table(
         data_dir / "datasets_metadata.csv",
         "datasets_metadata"
