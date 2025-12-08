@@ -1,43 +1,48 @@
-import sqlite3
+import streamlit as st
 import pandas as pd
-from pathlib import Path
+import sqlite3
 
-# Base directory
-BASE_DIR = Path(__file__).resolve().parent
+from services.database_manager import DatabaseManager
 
-# Path to the SQLite database
-DB_PATH = BASE_DIR / "Data" / "intelligence_platform.db"
+DB_PATH = "Data/intelligence_platform.db"
 
 
-def load_table(csv_path: Path, table_name: str):
+def load_csv_to_db(uploaded_file):
+    if uploaded_file is None:
+        st.warning("Please upload a CSV file.")
+        return
+
     try:
-        df = pd.read_csv(csv_path)
-
-        with sqlite3.connect(DB_PATH) as conn:
-            df.to_sql(table_name, conn, if_exists="append", index=False)
-
-        print(f"[✓] Loaded {len(df)} rows into {table_name}")
+        df = pd.read_csv(uploaded_file)
     except Exception as e:
-        print(f"[✗] Failed to load {table_name}: {e}")
+        st.error(f"Could not read CSV: {e}")
+        return
 
+    # show preview
+    st.subheader("CSV Preview")
+    st.dataframe(df.head())
 
-if __name__ == "__main__":
-    data_dir = BASE_DIR / "Data"
+    # insert
+    try:
+        db = DatabaseManager(DB_PATH)
+        db.connect()
 
-    # Cybersecurity
-    load_table(
-        data_dir / "cyber_incidents.csv",
-        "cyber_incidents"
-    )
+        # assuming table already exists, and column names match CSV
+        rows = df.to_records(index=False)
 
-    # IT Operations
-    load_table(
-        data_dir / "it_tickets.csv",
-        "it_tickets"
-    )
+        insert_query = f"""
+        INSERT INTO datasets ({", ".join(df.columns)})
+        VALUES ({", ".join(["?" for _ in df.columns])})
+        """
 
-    # Data Science Datasets
-    load_table(
-        data_dir / "datasets_metadata.csv",
-        "datasets_metadata"
-    )
+        for row in rows:
+            db.execute_query(insert_query, row)
+
+        st.success("CSV successfully imported to the database.")
+
+    except sqlite3.Error as e:
+        st.error(f"SQLite Error: {e}")
+    except Exception as e:
+        st.error(f"Error: {e}")
+    finally:
+        db.close()
