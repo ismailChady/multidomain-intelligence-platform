@@ -1,26 +1,35 @@
 import streamlit as st
 import pandas as pd
 from Database.data_management import connect_db, get_all_tickets
+from google import genai
+from models.it_ticket import ITTicket
 
-#ACCESS CONTROL
 if 'logged_in' not in st.session_state or not st.session_state.logged_in:
     st.warning("Please login to view this page.")
     st.stop()
 
-#PAGE CONFIG
 st.set_page_config(page_title="IT Operations Dashboard", layout="wide")
 st.title("IT Operations Dashboard")
 
-#LOAD DATA
 conn = connect_db()
 rows = get_all_tickets(conn)
 conn.close()
 
-df = pd.DataFrame(rows, columns=[
-    "Ticket ID", "Priority", "Description", "Status", "Assigned To", "Created At", "Resolution Time"
-])
+tickets = [
+    ITTicket(
+        ticket_id=row[0],
+        priority=row[1],
+        description=row[2],
+        status=row[3],
+        assigned_to=row[4],
+        created_at=row[5],
+        resolution_time=row[6],
+    )
+    for row in rows
+]
 
-#SIDEBAR FILTERS
+df = pd.DataFrame([t.to_dict() for t in tickets])
+
 st.sidebar.header("Filter Tickets")
 
 status_filter = st.sidebar.multiselect(
@@ -43,16 +52,66 @@ st.metric("Total Tickets", len(df))
 st.metric("Filtered Tickets", len(filtered_df))
 
 if not filtered_df.empty:
-    st.subheader(" Ticket Priorities")
-    st.bar_chart(filtered_df['Priority'].value_counts())
+    st.subheader("Ticket Priorities")
+    st.bar_chart(filtered_df["Priority"].value_counts())
 
 st.subheader("Ticket Records")
 st.dataframe(filtered_df, use_container_width=True)
 
 st.divider()
+st.subheader("AI IT Support Advisor")
 
+st.write(
+    "Use this assistant to analyse the tickets currently displayed above. "
+    "You can ask about priorities, workloads, bottlenecks, or next actions."
+)
 
-#INSERT FORM
+api_key = st.secrets["GEMINI_API_KEY"]
+client = genai.Client(api_key=api_key)
+MODEL = "gemini-2.5-flash"
+
+it_question = st.text_area(
+    "Ask a question about these tickets:",
+    placeholder="e.g. Which tickets should I resolve first? Do any staff seem overloaded?",
+    key="it_ai_question",
+)
+
+if st.button("Ask AI (IT Operations)", key="it_ai_button"):
+    if filtered_df.empty:
+        st.warning("There are no tickets in the current filtered view. Try changing the filters first.")
+    elif not it_question.strip():
+        st.warning("Please type a question before asking the AI.")
+    else:
+        with st.spinner("AI analysing your IT workload..."):
+            context_csv = filtered_df.to_csv(index=False)
+
+            prompt = f"""
+You are acting as an IT operations lead reviewing support tickets.
+
+The CSV below contains all the tickets currently visible in the dashboard.
+Columns may include: Ticket ID, Priority, Description, Status, Assigned To, Created At, Resolution Time.
+
+1. Briefly summarise what you notice (e.g., priority mix, status distribution, workload by staff).
+2. Answer the user's question directly, making use of this ticket data where possible.
+3. Suggest 3–5 practical recommendations to improve IT support workflow, prioritisation, or resolution time.
+
+TICKET DATA (CSV):
+
+{context_csv}
+
+USER QUESTION: {it_question}
+"""
+
+            try:
+                response = client.models.generate_content(
+                    model=MODEL,
+                    contents=prompt,
+                )
+                st.markdown(response.text)
+            except Exception as e:
+                st.error(f"AI error: {e}")
+
+st.divider()
 
 st.subheader("Add New Ticket")
 
@@ -72,16 +131,17 @@ with st.form("insert_ticket"):
                 INSERT INTO it_tickets (priority, description, status, assigned_to, created_at, resolution_time_hours)
                 VALUES (?, ?, ?, ?, ?, ?)
             """
-            conn.execute(insert_query, (priority, description, status, assigned_to, str(created_at), resolution_time))
+            conn.execute(
+                insert_query,
+                (priority, description, status, assigned_to, str(created_at), resolution_time),
+            )
             conn.commit()
             st.success("Ticket submitted successfully.")
         except Exception as e:
             st.error(f"Error: {e}")
         finally:
             conn.close()
-            st.experimental_rerun()
-
-#UPDATE FORM
+            st.rerun()
 
 st.subheader("Update Ticket Status")
 
@@ -100,9 +160,7 @@ with st.form("update_ticket"):
             st.error(f"Error: {e}")
         finally:
             conn.close()
-            st.experimental_rerun()
-
-#DELETE FORM
+            st.rerun()
 
 st.subheader("Delete Ticket")
 
@@ -120,4 +178,4 @@ with st.form("delete_ticket"):
             st.error(f"Error: {e}")
         finally:
             conn.close()
-            st.experimental_rerun()
+            st.rerun()
