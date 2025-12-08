@@ -1,59 +1,57 @@
-import bcrypt
-import sqlite3
 import streamlit as st
+from services.database_manager import DatabaseManager
+from services.auth_manager import AuthManager
 
-# Database path
 DB_PATH = "Data/intelligence_platform.db"
 
-#REGISTER USER
+
+def get_auth_manager() -> AuthManager:
+    if "auth_manager" not in st.session_state:
+        db = DatabaseManager(DB_PATH)
+        db.connect()
+        st.session_state["db_manager"] = db
+        st.session_state["auth_manager"] = AuthManager(db)
+    return st.session_state["auth_manager"]
+
+
 def register_user():
+    auth = get_auth_manager()
+
     username = st.text_input("Enter a new username", key="reg_username")
     password = st.text_input("Enter a new password", type="password", key="reg_password")
+    role = st.selectbox("Role", ["user", "analyst", "admin"], key="reg_role")
 
     if st.button("Register"):
         if not username or not password:
             st.warning("Username and password are required.")
             return
 
-        conn = sqlite3.connect(DB_PATH)
-        cursor = conn.cursor()
+        success = auth.register_user(username=username, password=password, role=role)
 
-        # Check if username exists
-        cursor.execute("SELECT * FROM users WHERE username = ?", (username,))
-        if cursor.fetchone():
+        if success:
+            st.success("You are registered successfully!")
+        else:
             st.warning("Username already exists.")
-            conn.close()
-            return
 
-        # Hash password
-        hashed = bcrypt.hashpw(password.encode(), bcrypt.gensalt())
-        cursor.execute("INSERT INTO users (username, password_hash) VALUES (?, ?)", (username, hashed.decode()))
-        conn.commit()
-        conn.close()
 
-        st.success("You are registered successfully!")
-
-#LOGIN USER
 def login_user():
+    auth = get_auth_manager()
+
     username = st.text_input("Enter your username", key="login_username")
     password = st.text_input("Enter your password", type="password", key="login_password")
 
     if st.button("Login"):
-        conn = sqlite3.connect(DB_PATH)
-        cursor = conn.cursor()
+        user = auth.login_user(username=username, password=password)
 
-        cursor.execute("SELECT password_hash FROM users WHERE username = ?", (username,))
-        result = cursor.fetchone()
-        conn.close()
+        if user is None:
+            st.error("Invalid username or password.")
+            return False
 
-        if result and bcrypt.checkpw(password.encode(), result[0].encode()):
-            st.session_state.username = username
-            st.session_state.logged_in = True
-            return True
-        elif result:
-            st.error("Incorrect password.")
-        else:
-            st.error("Username not found.")
-        return False
+        st.session_state.username = user.get_username()
+        st.session_state.logged_in = True
+        st.session_state.role = user.get_role()
 
-    return False
+        st.success(f"Welcome, {user.get_username()}!")
+        st.rerun()
+
+    return st.session_state.get("logged_in", False)
